@@ -1,0 +1,89 @@
+import django.db.models.deletion
+import uuid
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        ('farms', '0001_initial'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='Breed',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('deleted_at', models.DateTimeField(blank=True, null=True)),
+                ('name', models.CharField(max_length=100, unique=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+        ),
+        migrations.CreateModel(
+            name='Lot',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('deleted_at', models.DateTimeField(blank=True, null=True)),
+                ('name', models.CharField(max_length=100)),
+                ('farm', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lots', to='farms.farm')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Cattle',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('deleted_at', models.DateTimeField(blank=True, null=True)),
+                ('ear_tag', models.CharField(max_length=50)),
+                ('sex', models.CharField(choices=[('female', 'Hembra'), ('male', 'Macho')], max_length=10)),
+                ('productive_category', models.CharField(max_length=100)),
+                ('physiological_status', models.CharField(blank=True, max_length=100)),
+                ('estimated_birth_date', models.DateField(blank=True, null=True)),
+                ('operational_status', models.CharField(choices=[('pending_profile', 'Pendiente de perfil'), ('active', 'Activo'), ('sold', 'Vendido'), ('deceased', 'Muerto'), ('retired', 'Retirado')], default='pending_profile', max_length=20)),
+                ('profile_photo_url', models.URLField(blank=True)),
+                ('deactivated_at', models.DateTimeField(blank=True, null=True)),
+                ('deactivation_reason', models.CharField(blank=True, max_length=255)),
+                ('breed', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='cattle', to='cattle.breed')),
+                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_cattle', to=settings.AUTH_USER_MODEL)),
+                ('farm', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cattle', to='farms.farm')),
+                ('profile_approved_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='approved_profiles', to=settings.AUTH_USER_MODEL)),
+                ('lot', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='cattle', to='cattle.lot')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='LotMovement',
+            fields=[
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('deleted_at', models.DateTimeField(blank=True, null=True)),
+                ('started_at', models.DateTimeField()),
+                ('ended_at', models.DateTimeField(blank=True, null=True)),
+                ('cattle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lot_movements', to='cattle.cattle')),
+                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_lot_movements', to=settings.AUTH_USER_MODEL)),
+                ('lot', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='movements', to='cattle.lot')),
+            ],
+            options={
+                'abstract': False,
+            },
+        ),
+        migrations.AddConstraint(
+            model_name='lot',
+            constraint=models.UniqueConstraint(fields=('farm', 'name'), name='unique_lot_name_per_farm'),
+        ),
+        migrations.AddConstraint(
+            model_name='cattle',
+            constraint=models.UniqueConstraint(fields=('farm', 'ear_tag'), name='unique_ear_tag_per_farm'),
+        ),
+    ]
